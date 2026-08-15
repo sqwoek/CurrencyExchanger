@@ -1,7 +1,7 @@
 package roadmap.service;
 
 import roadmap.dao.CurrencyDao;
-import roadmap.model.CurrencyEntity;
+import roadmap.model.entity.CurrencyEntity;
 import roadmap.model.dto.CurrencyDto;
 
 import java.util.List;
@@ -14,29 +14,35 @@ public class CurrencyService {
         this.currencyDao = currencyDao;
     }
 
-    public void save(CurrencyDto dto) {
+    public CurrencyDto save(CurrencyDto dto) {
         CurrencyEntity entity = new CurrencyEntity(
-                dto.name(),
-                dto.code(),
-                dto.sign()
+                dto.getName(),
+                dto.getCode(),
+                dto.getSign()
         );
-        currencyDao.save(entity);
+        CurrencyEntity responseEntity = currencyDao.save(entity);
+        return new CurrencyDto(
+                responseEntity.getId(),
+                responseEntity.getName(),
+                responseEntity.getCode(),
+                responseEntity.getSign()
+        );
     }
 
     public CurrencyDto get(String code) {
         CurrencyEntity entity = currencyDao.getByCode(code);
-        CurrencyDto dto = new CurrencyDto(
+        return new CurrencyDto(
+                entity.getId(),
                 entity.getName(),
                 entity.getCode(),
                 entity.getSign()
         );
-        return dto;
     }
 
     public List<CurrencyDto> getAll() {
         List<CurrencyEntity> currencies = currencyDao.findAll();
         return currencies.stream()
-                .map(e -> new CurrencyDto(e.getName(), e.getCode(), e.getSign()))
+                .map(e -> new CurrencyDto(e.getId(), e.getName(), e.getCode(), e.getSign()))
                 .collect(Collectors.toList());
     }
 }

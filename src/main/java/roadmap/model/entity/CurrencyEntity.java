@@ -1,4 +1,4 @@
-package roadmap.model;
+package roadmap.model.entity;
 
 public class CurrencyEntity {
     private Long id;

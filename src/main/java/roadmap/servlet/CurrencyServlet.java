@@ -8,31 +8,31 @@ import roadmap.ConnectionManager;
 import roadmap.dao.CurrencyDao;
 import roadmap.model.dto.CurrencyDto;
 import roadmap.service.CurrencyService;
+import tools.jackson.databind.ObjectMapper;
+
+import java.io.IOException;
 
 @WebServlet("/api/currency/*")
 public class CurrencyServlet extends HttpServlet {
     private final CurrencyService currencyService;
+    private final ObjectMapper objectMapper;
 
     public CurrencyServlet() {
         ConnectionManager connectionManager = new ConnectionManager();
         CurrencyDao currencyDao = new CurrencyDao(connectionManager);
         this.currencyService = new CurrencyService(currencyDao);
+        this.objectMapper = new ObjectMapper();
     }
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) {
-        String code = req.getParameter("code");
-        String name = req.getParameter("name");
-        String sign = req.getParameter("sign");
-        CurrencyDto currency = new CurrencyDto(name, code, sign);
-        currencyService.save(currency);
-    }
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        resp.setContentType("application/json");
 
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) {
         String path = req.getPathInfo();
         String code = path.substring(1);
         CurrencyDto currency = currencyService.get(code);
-        System.out.println(currency);
+
+        String jsonResponse = objectMapper.writeValueAsString(currency);
+        resp.getWriter().write(jsonResponse);
     }
 }
