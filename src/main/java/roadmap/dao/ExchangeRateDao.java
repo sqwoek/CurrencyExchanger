@@ -2,6 +2,7 @@ package roadmap.dao;
 
 import roadmap.ConnectionManager;
 import roadmap.model.CodePair;
+import roadmap.model.ExchangeRateResponse;
 import roadmap.model.entity.ExchangeRateEntity;
 
 import java.sql.*;
@@ -16,6 +17,10 @@ public class ExchangeRateDao {
             SELECT * FROM exchangeRates WHERE base_currency_id = ? AND target_currency_id = ?
             """;
     private static final String FIND_ALL_QUERY = "SELECT * FROM exchangeRates";
+    private static final String UPDATE_QUERY = "UPDATE exchangeRates SET rate = ? WHERE id = ?";
+    private static final String FIND_BY_ID = """
+            SELECT id, base_currency_id, target_currency_id, rate FROM exchangeRates WHERE id = ?
+            """;
     private final ConnectionManager connectionManager;
 
     public ExchangeRateDao(ConnectionManager connectionManager) {
@@ -82,5 +87,37 @@ public class ExchangeRateDao {
             throw new RuntimeException("Exception in ExchangeRateDao.findAll()" + ex.getMessage());
         }
         return exchangeRates;
+    }
+
+    public ExchangeRateEntity update(ExchangeRateResponse exchangeRate) {
+        try (Connection connection = connectionManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(UPDATE_QUERY)) {
+            statement.setDouble(1, exchangeRate.rate());
+            statement.setLong(2, exchangeRate.id());
+            statement.executeUpdate();
+
+            return findById(exchangeRate.id());
+        } catch (SQLException ex) {
+            throw new RuntimeException("Exception in updateRate(): " + ex.getMessage(), ex);
+        }
+    }
+
+    private ExchangeRateEntity findById(Long id) {
+        try (Connection connection = connectionManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(FIND_BY_ID)) {
+            statement.setLong(1, id);
+            ResultSet result = statement.executeQuery();
+            if (result.next()) {
+                return new ExchangeRateEntity(
+                        result.getLong("id"),
+                        result.getLong("base_currency_id"),
+                        result.getLong("target_currency_id"),
+                        result.getDouble("rate")
+                );
+            }
+        } catch (SQLException ex) {
+            throw new RuntimeException("Error finding exchange rate: " + ex.getMessage(), ex);
+        }
+        return null;
     }
 }
