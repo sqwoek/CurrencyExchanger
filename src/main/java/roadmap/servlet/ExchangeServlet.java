@@ -1,5 +1,6 @@
 package roadmap.servlet;
 
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,15 +18,14 @@ import java.math.BigDecimal;
 
 @WebServlet("/api/exchange/*")
 public class ExchangeServlet extends HttpServlet {
-    private final ExchangeRateService exchangeRateService;
-    private final ObjectMapper objectMapper;
+    private ExchangeRateService exchangeRateService;
+    private ObjectMapper objectMapper;
 
-    public ExchangeServlet() {
-        ConnectionManager connectionManager = new ConnectionManager();
-        ExchangeRateDao exchangeRateDao = new ExchangeRateDao(connectionManager);
-        CurrencyDao currencyDao = new CurrencyDao(connectionManager);
-        this.exchangeRateService = new ExchangeRateService(exchangeRateDao, currencyDao);
-        this.objectMapper = new ObjectMapper();
+    @Override
+    public void init() {
+        ServletContext context = getServletContext();
+        this.exchangeRateService = (ExchangeRateService) context.getAttribute("exchangeRateService");
+        this.objectMapper = (ObjectMapper) context.getAttribute("objectMapper");
     }
 
     @Override

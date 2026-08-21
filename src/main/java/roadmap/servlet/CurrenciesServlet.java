@@ -1,5 +1,6 @@
 package roadmap.servlet;
 
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,14 +16,14 @@ import java.util.List;
 
 @WebServlet("/api/currencies/*")
 public class CurrenciesServlet extends HttpServlet {
-    private final CurrencyService currencyService;
-    private final ObjectMapper objectMapper;
+    private CurrencyService currencyService;
+    private ObjectMapper objectMapper;
 
-    public CurrenciesServlet() {
-        ConnectionManager connectionManager = new ConnectionManager();
-        CurrencyDao currencyDao = new CurrencyDao(connectionManager);
-        this.currencyService = new CurrencyService(currencyDao);
-        this.objectMapper = new ObjectMapper();
+    @Override
+    public void init() {
+        ServletContext context = getServletContext();
+        this.currencyService = (CurrencyService) context.getAttribute("currencyService");
+        this.objectMapper = (ObjectMapper) context.getAttribute("objectMapper");
     }
 
     @Override
