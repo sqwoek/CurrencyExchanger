@@ -1,10 +1,11 @@
 package roadmap.dao;
 
-import roadmap.ConnectionManager;
+import roadmap.util.ConnectionManager;
 import roadmap.model.CodePair;
 import roadmap.model.ExchangeRateResponse;
 import roadmap.model.entity.ExchangeRateEntity;
 
+import java.math.BigDecimal;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,18 +22,13 @@ public class ExchangeRateDao {
     private static final String FIND_BY_ID = """
             SELECT id, base_currency_id, target_currency_id, rate FROM exchangeRates WHERE id = ?
             """;
-    private final ConnectionManager connectionManager;
-
-    public ExchangeRateDao(ConnectionManager connectionManager) {
-        this.connectionManager = connectionManager;
-    }
 
     public ExchangeRateEntity save(ExchangeRateEntity exchangeRate) {
-        try (Connection connection = connectionManager.getConnection();
+        try (Connection connection = ConnectionManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(SAVE_QUERY, Statement.RETURN_GENERATED_KEYS)) {
             statement.setLong(1, exchangeRate.getBaseCurrencyId());
             statement.setLong(2, exchangeRate.getTargetCurrencyId());
-            statement.setDouble(3, exchangeRate.getRate());
+            statement.setBigDecimal(3, exchangeRate.getRate());
             statement.executeUpdate();
 
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
@@ -53,14 +49,14 @@ public class ExchangeRateDao {
     }
 
     public ExchangeRateEntity getByCode(CodePair codePair) {
-        try (Connection connection = connectionManager.getConnection();
+        try (Connection connection = ConnectionManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(GET_BY_CODE_QUERY)) {
             statement.setLong(1, codePair.baseCurrencyId());
             statement.setLong(2, codePair.targetCurrencyId());
             try (ResultSet result = statement.executeQuery()) {
                 if (result.next()) {
                     Long id = result.getLong("id");
-                    Double rate = result.getDouble("rate");
+                    BigDecimal rate = result.getBigDecimal("rate");
                     return new ExchangeRateEntity(id, codePair.baseCurrencyId(), codePair.targetCurrencyId(), rate);
                 }
             }
@@ -72,14 +68,14 @@ public class ExchangeRateDao {
 
     public List<ExchangeRateEntity> findAll() {
         List<ExchangeRateEntity> exchangeRates = new ArrayList<>();
-        try (Connection connection = connectionManager.getConnection();
+        try (Connection connection = ConnectionManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(FIND_ALL_QUERY);
              ResultSet result = statement.executeQuery()) {
             while (result.next()) {
                 Long id = result.getLong("id");
                 Long baseCurrencyId = result.getLong("base_currency_id");
                 Long targetCurrencyId = result.getLong("target_currency_id");
-                Double rate = result.getDouble("rate");
+                BigDecimal rate = result.getBigDecimal("rate");
                 ExchangeRateEntity exchangeRate = new ExchangeRateEntity(id, baseCurrencyId, targetCurrencyId, rate);
                 exchangeRates.add(exchangeRate);
             }
@@ -90,9 +86,9 @@ public class ExchangeRateDao {
     }
 
     public ExchangeRateEntity update(ExchangeRateResponse exchangeRate) {
-        try (Connection connection = connectionManager.getConnection();
+        try (Connection connection = ConnectionManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(UPDATE_QUERY)) {
-            statement.setDouble(1, exchangeRate.rate());
+            statement.setBigDecimal(1, exchangeRate.rate());
             statement.setLong(2, exchangeRate.id());
             statement.executeUpdate();
 
@@ -103,7 +99,7 @@ public class ExchangeRateDao {
     }
 
     private ExchangeRateEntity findById(Long id) {
-        try (Connection connection = connectionManager.getConnection();
+        try (Connection connection = ConnectionManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(FIND_BY_ID)) {
             statement.setLong(1, id);
             ResultSet result = statement.executeQuery();
@@ -112,7 +108,7 @@ public class ExchangeRateDao {
                         result.getLong("id"),
                         result.getLong("base_currency_id"),
                         result.getLong("target_currency_id"),
-                        result.getDouble("rate")
+                        result.getBigDecimal("rate")
                 );
             }
         } catch (SQLException ex) {

@@ -18,6 +18,7 @@
         <sqlite-jdbc.version>3.50.3.0</sqlite-jdbc.version>
         <maven.compiler.plugin.version>3.11.0</maven.compiler.plugin.version>
         <jackson-databind.version>3.0.3</jackson-databind.version>
+        <hikariCP.version>7.0.2</hikariCP.version>
     </properties>
 
     <dependencies>
@@ -36,6 +37,12 @@
             <groupId>tools.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>${jackson-databind.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>${hikariCP.version}</version>
             <scope>compile</scope>
         </dependency>
     </dependencies>

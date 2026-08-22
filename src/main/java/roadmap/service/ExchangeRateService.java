@@ -135,10 +135,9 @@ public class ExchangeRateService {
         String baseCurrencyCode = exchangeDto.baseCurrencyCode();
         String targetCurrencyCode = exchangeDto.targetCurrencyCode();
         ExchangeRateResponse entity = getByCode(baseCurrencyCode + targetCurrencyCode);
-        BigDecimal rate = BigDecimal.valueOf(entity.rate());
         BigDecimal amount = exchangeDto.amount();
 
-        BigDecimal convertedAmount = rate.multiply(amount);
+        BigDecimal convertedAmount = entity.rate().multiply(amount);
 
         return new ExchangeResponse(
                 entity.baseCurrency(),

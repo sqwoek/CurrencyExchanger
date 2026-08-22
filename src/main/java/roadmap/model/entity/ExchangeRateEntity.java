@@ -1,19 +1,21 @@
 package roadmap.model.entity;
 
+import java.math.BigDecimal;
+
 public class ExchangeRateEntity {
     private Long id;
     private final Long baseCurrencyId;
     private final Long targetCurrencyId;
-    private final Double rate;
+    private final BigDecimal rate;
 
-    public ExchangeRateEntity(Long id, Long baseCurrencyId, Long targetCurrencyId, Double rate) {
+    public ExchangeRateEntity(Long id, Long baseCurrencyId, Long targetCurrencyId, BigDecimal rate) {
         this.id = id;
         this.baseCurrencyId = baseCurrencyId;
         this.targetCurrencyId = targetCurrencyId;
         this.rate = rate;
     }
 
-    public ExchangeRateEntity(Long baseCurrencyId, Long targetCurrencyId, Double rate) {
+    public ExchangeRateEntity(Long baseCurrencyId, Long targetCurrencyId, BigDecimal rate) {
         this.baseCurrencyId = baseCurrencyId;
         this.targetCurrencyId = targetCurrencyId;
         this.rate = rate;
@@ -31,7 +33,7 @@ public class ExchangeRateEntity {
         return targetCurrencyId;
     }
 
-    public Double getRate() {
+    public BigDecimal getRate() {
         return rate;
     }
 }

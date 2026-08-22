@@ -5,10 +5,10 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import roadmap.ConnectionManager;
-import roadmap.dao.CurrencyDao;
+import roadmap.exception.ValidationException;
 import roadmap.model.dto.CurrencyDto;
 import roadmap.service.CurrencyService;
+import roadmap.validator.CurrencyValidator;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
@@ -31,6 +31,15 @@ public class CurrencyServlet extends HttpServlet {
 
         String path = req.getPathInfo();
         String code = path.substring(1);
+
+        try {
+            CurrencyValidator.validateCode(code);
+        } catch (ValidationException ex) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().write(ex.getMessage());
+            return;
+        }
+
         CurrencyDto currency = currencyService.get(code);
 
         String jsonResponse = objectMapper.writeValueAsString(currency);

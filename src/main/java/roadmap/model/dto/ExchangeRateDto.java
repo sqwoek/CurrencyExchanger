@@ -1,4 +1,6 @@
 package roadmap.model.dto;
 
-public record ExchangeRateDto(String baseCurrencyCode, String targetCurrencyCode, Double rate) {
+import java.math.BigDecimal;
+
+public record ExchangeRateDto(String baseCurrencyCode, String targetCurrencyCode, BigDecimal rate) {
 }

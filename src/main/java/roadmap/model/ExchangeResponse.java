@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 public record ExchangeResponse(
         CurrencyDto baseCurrency,
         CurrencyDto targetCurrency,
-        Double rate,
+        BigDecimal rate,
         BigDecimal amount,
         BigDecimal convertedAmount
 ) {

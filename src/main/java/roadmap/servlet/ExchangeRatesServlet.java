@@ -5,15 +5,16 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import roadmap.ConnectionManager;
-import roadmap.dao.CurrencyDao;
-import roadmap.dao.ExchangeRateDao;
+import roadmap.exception.ValidationException;
 import roadmap.model.dto.ExchangeRateDto;
 import roadmap.model.ExchangeRateResponse;
 import roadmap.service.ExchangeRateService;
+import roadmap.validator.CurrencyValidator;
+import roadmap.validator.ExchangeRateValidator;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.List;
 
 @WebServlet("/api/exchangeRates/*")
@@ -34,9 +35,21 @@ public class ExchangeRatesServlet extends HttpServlet {
 
         String baseCurrencyCode = req.getParameter("baseCurrencyCode");
         String targetCurrencyCode = req.getParameter("targetCurrencyCode");
-        Double rate = Double.parseDouble((req.getParameter("rate")));
 
-        ExchangeRateDto exchangeRate = new ExchangeRateDto(baseCurrencyCode, targetCurrencyCode, rate);
+        Double rate = Double.parseDouble((req.getParameter("rate")));
+        BigDecimal bigDecimalRate = BigDecimal.valueOf(rate);
+        try {
+            CurrencyValidator.validateCode(baseCurrencyCode);
+            CurrencyValidator.validateCode(targetCurrencyCode);
+            //TODO: method for parsing String rate -> BigDecimalRate
+            ExchangeRateValidator.validateRate(bigDecimalRate);
+        } catch (ValidationException ex) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().write(ex.getMessage());
+            return;
+        }
+        ExchangeRateDto exchangeRate = new ExchangeRateDto(baseCurrencyCode, targetCurrencyCode, bigDecimalRate);
+
         ExchangeRateResponse exchangeRateResponse = exchangeRateService.save(exchangeRate);
 
         String jsonResponse = objectMapper.writeValueAsString(exchangeRateResponse);
@@ -56,6 +69,15 @@ public class ExchangeRatesServlet extends HttpServlet {
             jsonResponse = objectMapper.writeValueAsString(exchangeRates);
         } else {
             String code = path.substring(1);
+
+            try {
+                CurrencyValidator.validateCode(code);
+            } catch (ValidationException ex) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                resp.getWriter().write(ex.getMessage());
+                return;
+            }
+
             response = exchangeRateService.getByCode(code);
             jsonResponse = objectMapper.writeValueAsString(response);
         }
@@ -76,8 +98,19 @@ public class ExchangeRatesServlet extends HttpServlet {
         String rateString = req.getReader().readLine();
         rateString = rateString.replace("rate=", "");
         Double rate = Double.parseDouble(rateString);
+        BigDecimal bigDecimalRate = BigDecimal.valueOf(rate);
 
-        ExchangeRateDto exchangeRate = new ExchangeRateDto(baseCurrencyCode, targetCurrencyCode, rate);
+        try {
+            CurrencyValidator.validateCode(baseCurrencyCode);
+            CurrencyValidator.validateCode(targetCurrencyCode);
+            ExchangeRateValidator.validateRate(bigDecimalRate);
+        } catch (ValidationException ex) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().write(ex.getMessage());
+            return;
+        }
+
+        ExchangeRateDto exchangeRate = new ExchangeRateDto(baseCurrencyCode, targetCurrencyCode, bigDecimalRate);
         ExchangeRateResponse exchangeRateResponse = exchangeRateService.update(exchangeRate);
 
         String jsonResponse = objectMapper.writeValueAsString(exchangeRateResponse);
