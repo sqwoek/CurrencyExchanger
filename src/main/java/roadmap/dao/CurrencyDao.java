@@ -95,7 +95,7 @@ public class CurrencyDao {
                     String name = result.getString("full_name");
                     String code = result.getString("code");
                     String sign = result.getString("sign");
-                    return new CurrencyEntity(id, code, name, sign);
+                    return new CurrencyEntity(id, name, code, sign);
                 }
             }
         } catch (SQLException ex) {

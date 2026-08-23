@@ -61,59 +61,11 @@ public class ExchangeRatesServlet extends HttpServlet {
         resp.setContentType("application/json");
 
         String path = req.getPathInfo();
-        ExchangeRateResponse response;
-        List<ExchangeRateResponse> exchangeRates;
-        String jsonResponse;
+
         if (path == null || path.equals("/")) {
-            exchangeRates = exchangeRateService.getAll();
-            jsonResponse = objectMapper.writeValueAsString(exchangeRates);
-        } else {
-            String code = path.substring(1);
-
-            try {
-                CurrencyValidator.validateCode(code);
-            } catch (ValidationException ex) {
-                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                resp.getWriter().write(ex.getMessage());
-                return;
-            }
-
-            response = exchangeRateService.getByCode(code);
-            jsonResponse = objectMapper.writeValueAsString(response);
+            List<ExchangeRateResponse> exchangeRates = exchangeRateService.getAll();
+            String jsonResponse = objectMapper.writeValueAsString(exchangeRates);
+            resp.getWriter().write(jsonResponse);
         }
-        resp.getWriter().write(jsonResponse);
-    }
-
-    @Override
-    protected void doPatch(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        resp.setContentType("application/json");
-
-        String path = req.getPathInfo();
-        String code = path.substring(1);
-        String baseCurrencyCode = code.substring(0, 3);
-        String targetCurrencyCode = code.substring(3);
-
-        // doPatch doesn't work correctly with req.getParameter("rate")?
-        // temp solution
-        String rateString = req.getReader().readLine();
-        rateString = rateString.replace("rate=", "");
-        Double rate = Double.parseDouble(rateString);
-        BigDecimal bigDecimalRate = BigDecimal.valueOf(rate);
-
-        try {
-            CurrencyValidator.validateCode(baseCurrencyCode);
-            CurrencyValidator.validateCode(targetCurrencyCode);
-            ExchangeRateValidator.validateRate(bigDecimalRate);
-        } catch (ValidationException ex) {
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write(ex.getMessage());
-            return;
-        }
-
-        ExchangeRateDto exchangeRate = new ExchangeRateDto(baseCurrencyCode, targetCurrencyCode, bigDecimalRate);
-        ExchangeRateResponse exchangeRateResponse = exchangeRateService.update(exchangeRate);
-
-        String jsonResponse = objectMapper.writeValueAsString(exchangeRateResponse);
-        resp.getWriter().write(jsonResponse);
     }
 }

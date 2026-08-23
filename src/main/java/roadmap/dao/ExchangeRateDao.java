@@ -1,7 +1,8 @@
 package roadmap.dao;
 
+import roadmap.model.entity.ExchangeRateSaveEntity;
 import roadmap.util.ConnectionManager;
-import roadmap.model.CodePair;
+import roadmap.model.CurrencyCodePair;
 import roadmap.model.ExchangeRateResponse;
 import roadmap.model.entity.ExchangeRateEntity;
 
@@ -11,11 +12,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ExchangeRateDao {
-    private final static String SAVE_QUERY = """
-            INSERT INTO exchangeRates (base_currency_id, target_currency_id, rate) values (?, ?, ?)
+    private static final String SAVE_WITH_CODES_QUERY = """
+            INSERT INTO exchangeRates (base_currency_id, target_currency_id, rate)
+            VALUES ((SELECT id FROM currencies WHERE code = ?),
+                    (SELECT id FROM currencies WHERE code = ?),
+                    ?)
             """;
-    private static final String GET_BY_CODE_QUERY = """
-            SELECT * FROM exchangeRates WHERE base_currency_id = ? AND target_currency_id = ?
+    private static final String GET_BY_CODES_QUERY = """
+            SELECT exchangeRates.*
+            FROM exchangeRates
+            JOIN currencies base ON base_currency_id = base.id
+            JOIN currencies target ON target_currency_id = target.id
+            WHERE base.code = ? AND target.code = ?
             """;
     private static final String FIND_ALL_QUERY = "SELECT * FROM exchangeRates";
     private static final String UPDATE_QUERY = "UPDATE exchangeRates SET rate = ? WHERE id = ?";
@@ -23,41 +31,31 @@ public class ExchangeRateDao {
             SELECT id, base_currency_id, target_currency_id, rate FROM exchangeRates WHERE id = ?
             """;
 
-    public ExchangeRateEntity save(ExchangeRateEntity exchangeRate) {
+    public void save(ExchangeRateSaveEntity exchangeRate) {
         try (Connection connection = ConnectionManager.getConnection();
-             PreparedStatement statement = connection.prepareStatement(SAVE_QUERY, Statement.RETURN_GENERATED_KEYS)) {
-            statement.setLong(1, exchangeRate.getBaseCurrencyId());
-            statement.setLong(2, exchangeRate.getTargetCurrencyId());
-            statement.setBigDecimal(3, exchangeRate.getRate());
+             PreparedStatement statement = connection.prepareStatement(SAVE_WITH_CODES_QUERY, Statement.RETURN_GENERATED_KEYS)) {
+            statement.setString(1, exchangeRate.baseCurrencyCode());
+            statement.setString(2, exchangeRate.targetCurrencyCode());
+            statement.setBigDecimal(3, exchangeRate.rate());
             statement.executeUpdate();
-
-            try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
-                if (generatedKeys.next()) {
-                    Long id = generatedKeys.getLong(1);
-                    return new ExchangeRateEntity(
-                            id,
-                            exchangeRate.getBaseCurrencyId(),
-                            exchangeRate.getTargetCurrencyId(),
-                            exchangeRate.getRate()
-                    );
-                }
-            }
-        } catch (SQLException ex) {
+        } catch (
+                SQLException ex) {
             throw new RuntimeException("Exception in ExchangeRateDao.save()" + ex.getMessage());
         }
-        return null;
     }
 
-    public ExchangeRateEntity getByCode(CodePair codePair) {
+    public ExchangeRateEntity getByCode(CurrencyCodePair codePair) {
         try (Connection connection = ConnectionManager.getConnection();
-             PreparedStatement statement = connection.prepareStatement(GET_BY_CODE_QUERY)) {
-            statement.setLong(1, codePair.baseCurrencyId());
-            statement.setLong(2, codePair.targetCurrencyId());
+             PreparedStatement statement = connection.prepareStatement(GET_BY_CODES_QUERY)) {
+            statement.setString(1, codePair.baseCurrencyCode());
+            statement.setString(2, codePair.targetCurrencyCode());
             try (ResultSet result = statement.executeQuery()) {
                 if (result.next()) {
                     Long id = result.getLong("id");
+                    Long baseCurrencyId = result.getLong("base_currency_id");
+                    Long targetCurrencyId = result.getLong("target_currency_id");
                     BigDecimal rate = result.getBigDecimal("rate");
-                    return new ExchangeRateEntity(id, codePair.baseCurrencyId(), codePair.targetCurrencyId(), rate);
+                    return new ExchangeRateEntity(id, baseCurrencyId, targetCurrencyId, rate);
                 }
             }
         } catch (SQLException ex) {

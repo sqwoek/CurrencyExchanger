@@ -2,7 +2,7 @@ package roadmap.service;
 
 import roadmap.dao.CurrencyDao;
 import roadmap.dao.ExchangeRateDao;
-import roadmap.model.CodePair;
+import roadmap.model.CurrencyCodePair;
 import roadmap.model.ExchangeResponse;
 import roadmap.model.dto.ExchangeDto;
 import roadmap.model.entity.CurrencyEntity;
@@ -10,6 +10,7 @@ import roadmap.model.entity.ExchangeRateEntity;
 import roadmap.model.dto.CurrencyDto;
 import roadmap.model.dto.ExchangeRateDto;
 import roadmap.model.ExchangeRateResponse;
+import roadmap.model.entity.ExchangeRateSaveEntity;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -25,47 +26,23 @@ public class ExchangeRateService {
     }
 
     public ExchangeRateResponse save(ExchangeRateDto exchangeRate) {
-        Long baseCurrencyId = currencyDao.getIdByCode(exchangeRate.baseCurrencyCode());
-        Long targetCurrencyId = currencyDao.getIdByCode(exchangeRate.targetCurrencyCode());
-
-        if (baseCurrencyId == null || targetCurrencyId == null) {
-            throw new RuntimeException("that code isn't saved");
-        }
-
-        ExchangeRateEntity entity = new ExchangeRateEntity(
-                baseCurrencyId,
-                targetCurrencyId,
+        ExchangeRateSaveEntity entity = new ExchangeRateSaveEntity(
+                exchangeRate.baseCurrencyCode(),
+                exchangeRate.targetCurrencyCode(),
                 exchangeRate.rate()
         );
 
-        ExchangeRateEntity responseEntity = exchangeRateDao.save(entity);
+        exchangeRateDao.save(entity);
 
-        CurrencyEntity baseCurrency = currencyDao.get(responseEntity.getBaseCurrencyId());
-        CurrencyEntity targetCurrency = currencyDao.get(responseEntity.getTargetCurrencyId());
-
-        CurrencyDto baseCurrencyDto = new CurrencyDto(baseCurrency.getId(), baseCurrency.getName(), baseCurrency.getCode(), baseCurrency.getSign());
-        CurrencyDto targetCurrencyDto = new CurrencyDto(targetCurrency.getId(), targetCurrency.getName(), targetCurrency.getCode(), targetCurrency.getSign());
-
-        return new ExchangeRateResponse(
-                responseEntity.getId(),
-                baseCurrencyDto,
-                targetCurrencyDto,
-                responseEntity.getRate()
-        );
+        CurrencyCodePair codePair = new CurrencyCodePair(exchangeRate.baseCurrencyCode(), exchangeRate.targetCurrencyCode());
+        return getByCode(codePair);
     }
 
-    public ExchangeRateResponse getByCode(String code) {
-        String baseCurrencyCode = code.substring(0, 3);
-        String targetCurrencyCode = code.substring(3);
-
-        Long baseCurrencyId = currencyDao.getIdByCode(baseCurrencyCode);
-        Long targetCurrencyId = currencyDao.getIdByCode(targetCurrencyCode);
-
-        CodePair codePair = new CodePair(baseCurrencyId, targetCurrencyId);
+    public ExchangeRateResponse getByCode(CurrencyCodePair codePair) {
         ExchangeRateEntity rateEntity = exchangeRateDao.getByCode(codePair);
 
-        CurrencyEntity baseCurrency = currencyDao.getByCode(baseCurrencyCode);
-        CurrencyEntity targetCurrency = currencyDao.getByCode(targetCurrencyCode);
+        CurrencyEntity baseCurrency = currencyDao.get(rateEntity.getBaseCurrencyId());
+        CurrencyEntity targetCurrency = currencyDao.get(rateEntity.getTargetCurrencyId());
 
         CurrencyDto baseCurrencyDto = new CurrencyDto(baseCurrency.getId(), baseCurrency.getName(), baseCurrency.getCode(), baseCurrency.getSign());
         CurrencyDto targetCurrencyDto = new CurrencyDto(targetCurrency.getId(), targetCurrency.getName(), targetCurrency.getCode(), targetCurrency.getSign());
@@ -112,8 +89,8 @@ public class ExchangeRateService {
     }
 
     public ExchangeRateResponse update(ExchangeRateDto exchangeRate) {
-        String code = exchangeRate.baseCurrencyCode() + exchangeRate.targetCurrencyCode();
-        ExchangeRateResponse oldResponse = getByCode(code);
+        CurrencyCodePair codePair = new CurrencyCodePair(exchangeRate.baseCurrencyCode(), exchangeRate.targetCurrencyCode());
+        ExchangeRateResponse oldResponse = getByCode(codePair);
 
         ExchangeRateResponse responseToChange = new ExchangeRateResponse(
                 oldResponse.id(),
@@ -134,7 +111,8 @@ public class ExchangeRateService {
     public ExchangeResponse exchange(ExchangeDto exchangeDto) {
         String baseCurrencyCode = exchangeDto.baseCurrencyCode();
         String targetCurrencyCode = exchangeDto.targetCurrencyCode();
-        ExchangeRateResponse entity = getByCode(baseCurrencyCode + targetCurrencyCode);
+        CurrencyCodePair codePair = new CurrencyCodePair(baseCurrencyCode, targetCurrencyCode);
+        ExchangeRateResponse entity = getByCode(codePair);
         BigDecimal amount = exchangeDto.amount();
 
         BigDecimal convertedAmount = entity.rate().multiply(amount);
