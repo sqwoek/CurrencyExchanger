@@ -6,11 +6,12 @@ import com.zaxxer.hikari.HikariDataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-public class ConnectionManager {
-    private static final String DB_PATH = "D:/demo/CurrencyExchanger/currency_db.sqlite";
+public class ConnectionManagerUtil {
+    private static final String DB_PATH =
+            "C:/Users/nazer/OneDrive/Desktop/demo/CurrencyExchanger/currency_db.sqlite";
     private static final HikariDataSource dataSource;
 
-    private ConnectionManager() {
+    private ConnectionManagerUtil() {
     }
 
     static {

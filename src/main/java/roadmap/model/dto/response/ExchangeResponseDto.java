@@ -1,14 +1,13 @@
-package roadmap.model;
+package roadmap.model.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import roadmap.model.dto.CurrencyDto;
 
 import java.math.BigDecimal;
 
 @JsonPropertyOrder({"baseCurrency", "targetCurrency", "rate", "amount", "convertedAmount"})
-public record ExchangeResponse(
-        CurrencyDto baseCurrency,
-        CurrencyDto targetCurrency,
+public record ExchangeResponseDto(
+        CurrencyResponseDto baseCurrency,
+        CurrencyResponseDto targetCurrency,
         BigDecimal rate,
         BigDecimal amount,
         BigDecimal convertedAmount

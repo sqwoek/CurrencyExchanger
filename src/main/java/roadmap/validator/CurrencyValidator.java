@@ -1,7 +1,7 @@
 package roadmap.validator;
 
 import roadmap.exception.ValidationException;
-import roadmap.model.dto.CurrencyDto;
+import roadmap.model.dto.request.CurrencyRequestDto;
 
 public final class CurrencyValidator {
     private static final int MIN_NAME_LENGTH = 2;
@@ -21,10 +21,10 @@ public final class CurrencyValidator {
     private CurrencyValidator() {
     }
 
-    public static void validate(CurrencyDto currency) {
-        validateName(currency.getName());
-        validateCode(currency.getCode());
-        validateSign(currency.getSign());
+    public static void validate(CurrencyRequestDto currency) {
+        validateName(currency.name());
+        validateCode(currency.code());
+        validateSign(currency.sign());
     }
 
     public static void validateCode(String code) {
