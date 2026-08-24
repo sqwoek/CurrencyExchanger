@@ -11,8 +11,9 @@ import roadmap.model.dto.request.ExchangeRateRequestDto;
 import roadmap.model.dto.response.ExchangeRateResponseDto;
 import roadmap.model.entity.CurrencyCodePair;
 import roadmap.service.ExchangeRateService;
-import roadmap.validator.CurrencyValidator;
-import roadmap.validator.ExchangeRateValidator;
+import roadmap.util.CurrencyValidatorUtil;
+import roadmap.util.ExchangeRateValidatorUtil;
+import roadmap.util.ServletResponseUtil;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
@@ -22,85 +23,65 @@ import java.util.NoSuchElementException;
 @WebServlet("/api/exchangeRate/*")
 public class ExchangeRateServlet extends HttpServlet {
     private ExchangeRateService exchangeRateService;
-    private ObjectMapper objectMapper;
 
     @Override
     public void init() {
         ServletContext context = getServletContext();
         this.exchangeRateService = (ExchangeRateService) context.getAttribute("exchangeRateService");
-        this.objectMapper = (ObjectMapper) context.getAttribute("objectMapper");
     }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        resp.setContentType("application/json");
-
-        String path = req.getPathInfo();
-        String code = path.substring(1);
-
-        String baseCurrencyCode = code.substring(0, 3);
-        String targetCurrencyCode = code.substring(3);
         try {
-            CurrencyValidator.validateCode(baseCurrencyCode);
-            CurrencyValidator.validateCode(targetCurrencyCode);
-        } catch (ValidationException ex) {
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write(ex.getMessage());
-            return;
-        }
-        CurrencyCodePair codePair = new CurrencyCodePair(baseCurrencyCode, targetCurrencyCode);
-        try {
+            CurrencyCodePair codePair = extractAndValidateCodePair(req);
             ExchangeRateResponseDto response = exchangeRateService.getByCode(codePair);
-            String jsonResponse = objectMapper.writeValueAsString(response);
-            resp.getWriter().write(jsonResponse);
+
+            ServletResponseUtil.sendSuccessResponse(resp, response);
+        } catch (ValidationException ex) {
+            ServletResponseUtil.sendErrorResponse(resp, 400, ex.getMessage());
         } catch (NoSuchElementException ex) {
-            resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            resp.getWriter().write(ex.getMessage());
+            ServletResponseUtil.sendErrorResponse(resp, 404, ex.getMessage());
         } catch (DatabaseException ex) {
-            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            resp.getWriter().write(ex.getMessage());
+            ServletResponseUtil.sendErrorResponse(resp, 500, ex.getMessage());
         }
     }
 
     @Override
     protected void doPatch(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        resp.setContentType("application/json");
+        try {
+            ExchangeRateRequestDto exchangeRate = extractAndValidateExchangeRateRequest(req);
+            ExchangeRateResponseDto exchangeRateResponseDto = exchangeRateService.update(exchangeRate);
 
+            ServletResponseUtil.sendSuccessResponse(resp, exchangeRateResponseDto);
+        } catch (ValidationException ex) {
+            ServletResponseUtil.sendErrorResponse(resp, 400, ex.getMessage());
+        } catch (NoSuchElementException ex) {
+            ServletResponseUtil.sendErrorResponse(resp, 404, ex.getMessage());
+        }
+    }
+
+    private ExchangeRateRequestDto extractAndValidateExchangeRateRequest(HttpServletRequest req) throws IOException {
+        CurrencyCodePair codePair = extractAndValidateCodePair(req);
+        String rateString = req.getReader().readLine();
+
+        if (rateString == null) {
+            throw new ValidationException(ExchangeRateValidatorUtil.MISSING_RATE_ERROR);
+        }
+
+        rateString = rateString.replace("rate=", "");
+
+        ExchangeRateValidatorUtil.validateRate(rateString);
+        BigDecimal bigDecimalRate = new BigDecimal(rateString);
+        return new ExchangeRateRequestDto(codePair.baseCurrencyCode(), codePair.targetCurrencyCode(), bigDecimalRate);
+    }
+
+    private static CurrencyCodePair extractAndValidateCodePair(HttpServletRequest req) {
         String path = req.getPathInfo();
         String code = path.substring(1);
         String baseCurrencyCode = code.substring(0, 3);
         String targetCurrencyCode = code.substring(3);
-
-        String rateString = req.getReader().readLine();
-
-        if (rateString == null) {
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write("Query must contain rate.");
-            return;
-        }
-
-        rateString = rateString.replace("rate=", "");
-        Double rate = Double.parseDouble(rateString);
-        BigDecimal bigDecimalRate = BigDecimal.valueOf(rate);
-
-        try {
-            CurrencyValidator.validateCode(baseCurrencyCode);
-            CurrencyValidator.validateCode(targetCurrencyCode);
-            ExchangeRateValidator.validateRate(bigDecimalRate);
-        } catch (ValidationException ex) {
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write(ex.getMessage());
-            return;
-        }
-
-        ExchangeRateRequestDto exchangeRate = new ExchangeRateRequestDto(baseCurrencyCode, targetCurrencyCode, bigDecimalRate);
-        try {
-            ExchangeRateResponseDto exchangeRateResponseDto = exchangeRateService.update(exchangeRate);
-            String jsonResponse = objectMapper.writeValueAsString(exchangeRateResponseDto);
-            resp.getWriter().write(jsonResponse);
-        } catch (NoSuchElementException ex) {
-            resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            resp.getWriter().write(ex.getMessage());
-        }
+        CurrencyCodePair codePair = new CurrencyCodePair(baseCurrencyCode, targetCurrencyCode);
+        ExchangeRateValidatorUtil.validateCodePair(codePair);
+        return new CurrencyCodePair(baseCurrencyCode, targetCurrencyCode);
     }
 }

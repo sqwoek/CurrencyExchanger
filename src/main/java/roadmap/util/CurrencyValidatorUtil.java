@@ -1,9 +1,9 @@
-package roadmap.validator;
+package roadmap.util;
 
 import roadmap.exception.ValidationException;
 import roadmap.model.dto.request.CurrencyRequestDto;
 
-public final class CurrencyValidator {
+public final class CurrencyValidatorUtil {
     private static final int MIN_NAME_LENGTH = 2;
     private static final int MAX_NAME_LENGTH = 100;
     private static final String CODE_PATTERN = "[a-zA-Z]{3}";
@@ -18,13 +18,7 @@ public final class CurrencyValidator {
                     MIN_NAME_LENGTH, MAX_NAME_LENGTH
             );
 
-    private CurrencyValidator() {
-    }
-
-    public static void validate(CurrencyRequestDto currency) {
-        validateName(currency.name());
-        validateCode(currency.code());
-        validateSign(currency.sign());
+    private CurrencyValidatorUtil() {
     }
 
     public static void validateCode(String code) {
@@ -36,7 +30,7 @@ public final class CurrencyValidator {
         }
     }
 
-    private static void validateSign(String sign) {
+    public static void validateSign(String sign) {
         if (sign == null || sign.trim().isEmpty()) {
             throw new ValidationException(MISSING_SIGN_MESSAGE);
         }
@@ -45,7 +39,7 @@ public final class CurrencyValidator {
         }
     }
 
-    private static void validateName(String name) {
+    public static void validateName(String name) {
         if (name == null || name.trim().isEmpty()) {
             throw new ValidationException(MISSING_NAME_MESSAGE);
         }
