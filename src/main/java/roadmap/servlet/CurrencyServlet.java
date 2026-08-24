@@ -39,7 +39,7 @@ public class CurrencyServlet extends HttpServlet {
         } catch (NoSuchElementException ex) {
             ServletResponseUtil.sendErrorResponse(resp, 404, ex.getMessage());
         } catch (DatabaseException ex) {
-            ServletResponseUtil.sendErrorResponse(resp, 500, ex.getMessage());
+            ServletResponseUtil.sendErrorResponse(resp, 500, "Internal error.");
         }
     }
 
@@ -47,6 +47,6 @@ public class CurrencyServlet extends HttpServlet {
         String path = req.getPathInfo();
         String code = path.substring(1);
         CurrencyValidatorUtil.validateCode(code);
-        return code;
+        return code.toUpperCase();
     }
 }

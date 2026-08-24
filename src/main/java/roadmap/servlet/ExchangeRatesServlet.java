@@ -46,7 +46,7 @@ public class ExchangeRatesServlet extends HttpServlet {
         } catch (EntityAlreadyExists ex) {
             ServletResponseUtil.sendErrorResponse(resp, 409, ex.getMessage());
         } catch (DatabaseException ex) {
-            ServletResponseUtil.sendErrorResponse(resp, 500, ex.getMessage());
+            ServletResponseUtil.sendErrorResponse(resp, 500, "Internal error.");
         }
     }
 
@@ -56,7 +56,7 @@ public class ExchangeRatesServlet extends HttpServlet {
             List<ExchangeRateResponseDto> exchangeRates = exchangeRateService.getAll();
             ServletResponseUtil.sendSuccessResponse(resp, exchangeRates);
         } catch (DatabaseException ex) {
-            ServletResponseUtil.sendErrorResponse(resp, 500, ex.getMessage());
+            ServletResponseUtil.sendErrorResponse(resp, 500, "Internal error.");
         }
     }
 
@@ -65,11 +65,13 @@ public class ExchangeRatesServlet extends HttpServlet {
         String targetCurrencyCode = req.getParameter("targetCurrencyCode");
         String rate = req.getParameter("rate");
 
-        CurrencyCodePair codePair = new CurrencyCodePair(baseCurrencyCode, targetCurrencyCode);
+        CurrencyCodePair codePair =
+                new CurrencyCodePair(baseCurrencyCode.toUpperCase(), targetCurrencyCode.toUpperCase());
         ExchangeRateValidatorUtil.validateCodePair(codePair);
         ExchangeRateValidatorUtil.validateRate(rate);
 
         BigDecimal bigDecimalRate = new BigDecimal(rate);
-        return new ExchangeRateRequestDto(baseCurrencyCode, targetCurrencyCode, bigDecimalRate);
+        return new ExchangeRateRequestDto(codePair.baseCurrencyCode(),
+                codePair.targetCurrencyCode(), bigDecimalRate);
     }
 }

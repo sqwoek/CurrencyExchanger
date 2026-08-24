@@ -41,10 +41,18 @@ public class ExchangeRateService {
         CurrencyEntity baseCurrencyEntity = rateEntity.baseCurrencyEntity();
         CurrencyEntity targetCurrencyEntity = rateEntity.targetCurrencyEntity();
 
-        CurrencyResponseDto baseCurrencyResponseDto = new CurrencyResponseDto(baseCurrencyEntity.id(), baseCurrencyEntity.name(),
-                baseCurrencyEntity.code(), baseCurrencyEntity.sign());
-        CurrencyResponseDto targetCurrencyResponseDto = new CurrencyResponseDto(targetCurrencyEntity.id(), targetCurrencyEntity.name(),
-                targetCurrencyEntity.code(), targetCurrencyEntity.sign());
+        CurrencyResponseDto baseCurrencyResponseDto = new CurrencyResponseDto(
+                baseCurrencyEntity.id(),
+                baseCurrencyEntity.name(),
+                baseCurrencyEntity.code(),
+                baseCurrencyEntity.sign()
+        );
+        CurrencyResponseDto targetCurrencyResponseDto = new CurrencyResponseDto(
+                targetCurrencyEntity.id(),
+                targetCurrencyEntity.name(),
+                targetCurrencyEntity.code(),
+                targetCurrencyEntity.sign()
+        );
 
         return new ExchangeRateResponseDto(
                 rateEntity.id(),

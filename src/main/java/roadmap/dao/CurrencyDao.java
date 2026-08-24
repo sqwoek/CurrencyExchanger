@@ -27,16 +27,14 @@ public class CurrencyDao {
             ResultSet generatedKeys = statement.getGeneratedKeys();
             if (generatedKeys.next()) {
                 Long id = generatedKeys.getLong(1);
-                return new CurrencyEntity(id, currencyEntity.code(), currencyEntity.name(), currencyEntity.sign());
+                return new CurrencyEntity(id, currencyEntity.name(), currencyEntity.code(), currencyEntity.sign());
             }
         } catch (SQLException ex) {
             if (ex.getErrorCode() == CONSTRAINT_UNIQUE_ERROR) {
                 throw new EntityAlreadyExists("Currency with code %s already exists.".formatted(currencyEntity.code()));
-            } else {
-                throw new DatabaseException();
             }
         }
-        return null;
+        throw new DatabaseException();
     }
 
     public CurrencyEntity getByCode(String code) {

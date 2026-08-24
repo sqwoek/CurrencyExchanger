@@ -42,7 +42,7 @@ public class ExchangeRateServlet extends HttpServlet {
         } catch (NoSuchElementException ex) {
             ServletResponseUtil.sendErrorResponse(resp, 404, ex.getMessage());
         } catch (DatabaseException ex) {
-            ServletResponseUtil.sendErrorResponse(resp, 500, ex.getMessage());
+            ServletResponseUtil.sendErrorResponse(resp, 500, "Internal error.");
         }
     }
 
@@ -57,6 +57,8 @@ public class ExchangeRateServlet extends HttpServlet {
             ServletResponseUtil.sendErrorResponse(resp, 400, ex.getMessage());
         } catch (NoSuchElementException ex) {
             ServletResponseUtil.sendErrorResponse(resp, 404, ex.getMessage());
+        } catch (DatabaseException ex) {
+            ServletResponseUtil.sendErrorResponse(resp, 500, "Internal error.");
         }
     }
 
@@ -80,8 +82,10 @@ public class ExchangeRateServlet extends HttpServlet {
         String code = path.substring(1);
         String baseCurrencyCode = code.substring(0, 3);
         String targetCurrencyCode = code.substring(3);
-        CurrencyCodePair codePair = new CurrencyCodePair(baseCurrencyCode, targetCurrencyCode);
+
+        CurrencyCodePair codePair =
+                new CurrencyCodePair(baseCurrencyCode.toUpperCase(), targetCurrencyCode.toUpperCase());
         ExchangeRateValidatorUtil.validateCodePair(codePair);
-        return new CurrencyCodePair(baseCurrencyCode, targetCurrencyCode);
+        return codePair;
     }
 }

@@ -40,7 +40,7 @@ public class ExchangeServlet extends HttpServlet {
         } catch (NoSuchElementException ex) {
             ServletResponseUtil.sendErrorResponse(resp, 404, ex.getMessage());
         } catch (DatabaseException ex) {
-            ServletResponseUtil.sendErrorResponse(resp, 500, ex.getMessage());
+            ServletResponseUtil.sendErrorResponse(resp, 500, "Internal error.");
         }
     }
 
@@ -49,11 +49,11 @@ public class ExchangeServlet extends HttpServlet {
         String toCode = req.getParameter("to");
         String amount = req.getParameter("amount");
 
-        CurrencyValidatorUtil.validateCode(fromCode);
-        CurrencyValidatorUtil.validateCode(toCode);
+        CurrencyValidatorUtil.validateCode(fromCode.toUpperCase());
+        CurrencyValidatorUtil.validateCode(toCode.toUpperCase());
         ExchangeRateValidatorUtil.validateAmount(amount);
 
         BigDecimal bigDecimalAmount = new BigDecimal(amount);
-        return new ExchangeRequestDto(fromCode, toCode, bigDecimalAmount);
+        return new ExchangeRequestDto(fromCode.toUpperCase(), toCode.toUpperCase(), bigDecimalAmount);
     }
 }
