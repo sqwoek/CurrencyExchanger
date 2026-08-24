@@ -5,6 +5,8 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import roadmap.exception.DatabaseException;
+import roadmap.exception.EntityAlreadyExists;
 import roadmap.exception.ValidationException;
 import roadmap.model.dto.request.ExchangeRateRequestDto;
 import roadmap.model.dto.response.ExchangeRateResponseDto;
@@ -16,6 +18,7 @@ import tools.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @WebServlet("/api/exchangeRates/*")
 public class ExchangeRatesServlet extends HttpServlet {
@@ -49,10 +52,21 @@ public class ExchangeRatesServlet extends HttpServlet {
             return;
         }
         ExchangeRateRequestDto exchangeRate = new ExchangeRateRequestDto(baseCurrencyCode, targetCurrencyCode, bigDecimalRate);
-        ExchangeRateResponseDto exchangeRateResponseDto = exchangeRateService.save(exchangeRate);
 
-        String jsonResponse = objectMapper.writeValueAsString(exchangeRateResponseDto);
-        resp.getWriter().write(jsonResponse);
+        try {
+            ExchangeRateResponseDto exchangeRateResponseDto = exchangeRateService.save(exchangeRate);
+            String jsonResponse = objectMapper.writeValueAsString(exchangeRateResponseDto);
+            resp.getWriter().write(jsonResponse);
+        } catch (NoSuchElementException ex) {
+            resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            resp.getWriter().write(ex.getMessage());
+        } catch (EntityAlreadyExists ex) {
+            resp.setStatus(HttpServletResponse.SC_CONFLICT);
+            resp.getWriter().write(ex.getMessage());
+        } catch (DatabaseException ex) {
+            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            resp.getWriter().write(ex.getMessage());
+        }
     }
 
     @Override
@@ -62,9 +76,15 @@ public class ExchangeRatesServlet extends HttpServlet {
         String path = req.getPathInfo();
 
         if (path == null || path.equals("/")) {
-            List<ExchangeRateResponseDto> exchangeRates = exchangeRateService.getAll();
-            String jsonResponse = objectMapper.writeValueAsString(exchangeRates);
-            resp.getWriter().write(jsonResponse);
+            try {
+                List<ExchangeRateResponseDto> exchangeRates = exchangeRateService.getAll();
+                String jsonResponse = objectMapper.writeValueAsString(exchangeRates);
+                resp.getWriter().write(jsonResponse);
+            } catch (DatabaseException ex) {
+                resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                resp.getWriter().write(ex.getMessage());
+            }
+
         }
     }
 }

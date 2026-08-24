@@ -5,6 +5,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import roadmap.exception.DatabaseException;
 import roadmap.exception.ValidationException;
 import roadmap.model.dto.request.ExchangeRateRequestDto;
 import roadmap.model.dto.response.ExchangeRateResponseDto;
@@ -16,6 +17,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.NoSuchElementException;
 
 @WebServlet("/api/exchangeRate/*")
 public class ExchangeRateServlet extends HttpServlet {
@@ -47,9 +49,17 @@ public class ExchangeRateServlet extends HttpServlet {
             return;
         }
         CurrencyCodePair codePair = new CurrencyCodePair(baseCurrencyCode, targetCurrencyCode);
-        ExchangeRateResponseDto response = exchangeRateService.getByCode(codePair);
-        String jsonResponse = objectMapper.writeValueAsString(response);
-        resp.getWriter().write(jsonResponse);
+        try {
+            ExchangeRateResponseDto response = exchangeRateService.getByCode(codePair);
+            String jsonResponse = objectMapper.writeValueAsString(response);
+            resp.getWriter().write(jsonResponse);
+        } catch (NoSuchElementException ex) {
+            resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            resp.getWriter().write(ex.getMessage());
+        } catch (DatabaseException ex) {
+            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            resp.getWriter().write(ex.getMessage());
+        }
     }
 
     @Override
@@ -62,6 +72,13 @@ public class ExchangeRateServlet extends HttpServlet {
         String targetCurrencyCode = code.substring(3);
 
         String rateString = req.getReader().readLine();
+
+        if (rateString == null) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().write("Query must contain rate.");
+            return;
+        }
+
         rateString = rateString.replace("rate=", "");
         Double rate = Double.parseDouble(rateString);
         BigDecimal bigDecimalRate = BigDecimal.valueOf(rate);
@@ -77,9 +94,13 @@ public class ExchangeRateServlet extends HttpServlet {
         }
 
         ExchangeRateRequestDto exchangeRate = new ExchangeRateRequestDto(baseCurrencyCode, targetCurrencyCode, bigDecimalRate);
-        ExchangeRateResponseDto exchangeRateResponseDto = exchangeRateService.update(exchangeRate);
-
-        String jsonResponse = objectMapper.writeValueAsString(exchangeRateResponseDto);
-        resp.getWriter().write(jsonResponse);
+        try {
+            ExchangeRateResponseDto exchangeRateResponseDto = exchangeRateService.update(exchangeRate);
+            String jsonResponse = objectMapper.writeValueAsString(exchangeRateResponseDto);
+            resp.getWriter().write(jsonResponse);
+        } catch (NoSuchElementException ex) {
+            resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            resp.getWriter().write(ex.getMessage());
+        }
     }
 }

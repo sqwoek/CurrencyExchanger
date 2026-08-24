@@ -15,6 +15,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.NoSuchElementException;
 
 @WebServlet("/api/exchange/*")
 public class ExchangeServlet extends HttpServlet {
@@ -47,9 +48,13 @@ public class ExchangeServlet extends HttpServlet {
         }
 
         ExchangeRequestDto exchangeRequestDto = new ExchangeRequestDto(from, to, amount);
-        ExchangeResponseDto response = exchangeRateService.exchange(exchangeRequestDto);
-
-        String jsonResponse = objectMapper.writeValueAsString(response);
-        resp.getWriter().write(jsonResponse);
+        try {
+            ExchangeResponseDto response = exchangeRateService.exchange(exchangeRequestDto);
+            String jsonResponse = objectMapper.writeValueAsString(response);
+            resp.getWriter().write(jsonResponse);
+        } catch (NoSuchElementException ex) {
+            resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            resp.getWriter().write(ex.getMessage());
+        }
     }
 }

@@ -5,6 +5,8 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import roadmap.exception.DatabaseException;
+import roadmap.exception.EntityAlreadyExists;
 import roadmap.exception.ValidationException;
 import roadmap.model.dto.request.CurrencyRequestDto;
 import roadmap.model.dto.response.CurrencyResponseDto;
@@ -45,10 +47,17 @@ public class CurrenciesServlet extends HttpServlet {
             return;
         }
 
-        CurrencyResponseDto responseCurrency = currencyService.save(requestCurrency);
-
-        String jsonResponse = objectMapper.writeValueAsString(responseCurrency);
-        resp.getWriter().write(jsonResponse);
+        try {
+            CurrencyResponseDto responseCurrency = currencyService.save(requestCurrency);
+            String jsonResponse = objectMapper.writeValueAsString(responseCurrency);
+            resp.getWriter().write(jsonResponse);
+        } catch (EntityAlreadyExists ex) {
+            resp.setStatus(HttpServletResponse.SC_CONFLICT);
+            resp.getWriter().write(ex.getMessage());
+        } catch (DatabaseException ex) {
+            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            resp.getWriter().write(ex.getMessage());
+        }
     }
 
     @Override
