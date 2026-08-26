@@ -1,7 +1,7 @@
 package roadmap.dao;
 
 import roadmap.exception.DatabaseException;
-import roadmap.exception.EntityAlreadyExists;
+import roadmap.exception.EntityAlreadyExistsException;
 import roadmap.model.entity.CurrencyEntity;
 import roadmap.model.entity.ExchangeRateUpdateEntity;
 import roadmap.util.ConnectionManagerUtil;
@@ -40,24 +40,23 @@ public class ExchangeRateDao {
     private static final String CURRENCY_EXISTS_QUERY = "SELECT 1 FROM currencies WHERE code = ?";
 
     public void save(ExchangeRateUpdateEntity exchangeRate) {
-        int rowsInserted = 0;
         try (Connection connection = ConnectionManagerUtil.getConnection();
              PreparedStatement statement = connection.prepareStatement(SAVE_WITH_CODES_QUERY)) {
             statement.setString(1, exchangeRate.baseCurrencyCode());
             statement.setString(2, exchangeRate.targetCurrencyCode());
             statement.setBigDecimal(3, exchangeRate.rate());
 
-            rowsInserted = statement.executeUpdate();
-        } catch (SQLException ex) {
+            int rowsInserted = statement.executeUpdate();
             if (rowsInserted == 0) {
                 checkCurrencyExists(exchangeRate.baseCurrencyCode());
                 checkCurrencyExists(exchangeRate.targetCurrencyCode());
             }
+        } catch (SQLException ex) {
             if (ex.getErrorCode() == CONSTRAINT_UNIQUE_ERROR) {
-                throw new EntityAlreadyExists("Exchange rate with code pair %s, %s already exists.".formatted(
+                throw new EntityAlreadyExistsException("Exchange rate with code pair %s, %s already exists.".formatted(
                         exchangeRate.baseCurrencyCode(), exchangeRate.targetCurrencyCode()));
             } else {
-                throw new DatabaseException();
+                throw new DatabaseException("Failed to save exchange rate.", ex);
             }
         }
     }
@@ -68,32 +67,35 @@ public class ExchangeRateDao {
             statement.setString(1, codePair.baseCurrencyCode());
             statement.setString(2, codePair.targetCurrencyCode());
 
-            ResultSet result = statement.executeQuery();
-            if (result.next()) {
-                CurrencyEntity baseCurrencyEntity = new CurrencyEntity(
-                        result.getLong("base_id"),
-                        result.getString("base_name"),
-                        result.getString("base_code"),
-                        result.getString("base_sign")
-                );
-                CurrencyEntity targetCurrencyEntity = new CurrencyEntity(
-                        result.getLong("target_id"),
-                        result.getString("target_name"),
-                        result.getString("target_code"),
-                        result.getString("target_sign")
-                );
-                return new ExchangeRateEntity(
-                        result.getLong("exchange_id"),
-                        baseCurrencyEntity,
-                        targetCurrencyEntity,
-                        result.getBigDecimal("exchange_rate")
-                );
-            } else {
-                checkCurrencyExists(codePair.baseCurrencyCode());
-                checkCurrencyExists(codePair.targetCurrencyCode());
+            try (ResultSet result = statement.executeQuery()) {
+                if (result.next()) {
+                    CurrencyEntity baseCurrencyEntity = new CurrencyEntity(
+                            result.getLong("base_id"),
+                            result.getString("base_name"),
+                            result.getString("base_code"),
+                            result.getString("base_sign")
+                    );
+                    CurrencyEntity targetCurrencyEntity = new CurrencyEntity(
+                            result.getLong("target_id"),
+                            result.getString("target_name"),
+                            result.getString("target_code"),
+                            result.getString("target_sign")
+                    );
+                    return new ExchangeRateEntity(
+                            result.getLong("exchange_id"),
+                            baseCurrencyEntity,
+                            targetCurrencyEntity,
+                            result.getBigDecimal("exchange_rate")
+                    );
+                } else {
+                    checkCurrencyExists(codePair.baseCurrencyCode());
+                    checkCurrencyExists(codePair.targetCurrencyCode());
+                }
             }
         } catch (SQLException ex) {
-            throw new DatabaseException();
+            throw new DatabaseException(
+                    "Failed to fetch exchange rate with code pair %s, %s."
+                            .formatted(codePair.baseCurrencyCode(), codePair.targetCurrencyCode()), ex);
         }
         throw new NoSuchElementException("Exchange rate with code pair %s, %s not found.".formatted(
                 codePair.baseCurrencyCode(), codePair.targetCurrencyCode()
@@ -127,7 +129,7 @@ public class ExchangeRateDao {
                 exchangeRates.add(exchangeRate);
             }
         } catch (SQLException ex) {
-            throw new DatabaseException();
+            throw new DatabaseException("Failed to fetch all exchange rates." + ex);
         }
         return exchangeRates;
     }
@@ -146,20 +148,20 @@ public class ExchangeRateDao {
                 );
             }
         } catch (SQLException ex) {
-            throw new DatabaseException();
+            throw new DatabaseException("Failed to update exchange rate." + ex);
         }
     }
 
     private void checkCurrencyExists(String code) {
         try (Connection connection = ConnectionManagerUtil.getConnection();
-             PreparedStatement statement = connection.prepareStatement(CURRENCY_EXISTS_QUERY)) {
+             PreparedStatement statement = connection.prepareStatement(CURRENCY_EXISTS_QUERY);
+             ResultSet result = statement.executeQuery()) {
             statement.setString(1, code);
-            ResultSet result = statement.executeQuery();
             if (!result.next()) {
                 throw new NoSuchElementException("Currency with code %s not found.".formatted(code));
             }
         } catch (SQLException ex) {
-            throw new DatabaseException();
+            throw new DatabaseException("Failed to check existence of currency with code %s".formatted(code) + ex);
         }
     }
 }

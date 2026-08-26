@@ -6,14 +6,13 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import roadmap.exception.DatabaseException;
-import roadmap.exception.EntityAlreadyExists;
+import roadmap.exception.EntityAlreadyExistsException;
 import roadmap.exception.ValidationException;
 import roadmap.model.dto.request.CurrencyRequestDto;
 import roadmap.model.dto.response.CurrencyResponseDto;
 import roadmap.service.CurrencyService;
 import roadmap.util.CurrencyValidatorUtil;
 import roadmap.util.ServletResponseUtil;
-import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.util.List;
@@ -37,7 +36,7 @@ public class CurrenciesServlet extends HttpServlet {
             ServletResponseUtil.sendSuccessResponse(resp, responseCurrency);
         } catch (ValidationException ex) {
             ServletResponseUtil.sendErrorResponse(resp, 400, ex.getMessage());
-        } catch (EntityAlreadyExists ex) {
+        } catch (EntityAlreadyExistsException ex) {
             ServletResponseUtil.sendErrorResponse(resp, 409, ex.getMessage());
         } catch (DatabaseException ex) {
             ServletResponseUtil.sendErrorResponse(resp, 500, "Internal error.");
