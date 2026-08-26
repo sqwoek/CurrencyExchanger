@@ -1,24 +1,30 @@
 package roadmap.service;
 
-import roadmap.dao.ExchangeRateDao;
+import roadmap.dao.JdbcExchangeRateDao;
+import roadmap.mapper.CurrencyMapper;
+import roadmap.mapper.ExchangeRateMapper;
 import roadmap.model.dto.request.ExchangeRateRequestDto;
 import roadmap.model.dto.request.ExchangeRequestDto;
-import roadmap.model.dto.response.CurrencyResponseDto;
 import roadmap.model.dto.response.ExchangeRateResponseDto;
 import roadmap.model.entity.CurrencyCodePair;
 import roadmap.model.entity.ExchangeRateUpdateEntity;
 import roadmap.model.dto.response.ExchangeResponseDto;
-import roadmap.model.entity.CurrencyEntity;
 import roadmap.model.entity.ExchangeRateEntity;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 
 public class ExchangeRateService {
-    private final ExchangeRateDao exchangeRateDao;
+    private final static RoundingMode BANK_ROUNDING = RoundingMode.HALF_EVEN;
+    private final static int RATE_SCALE = 6;
+    private final static int MONEY_DISPLAY_SCALE = 2;
+    private final JdbcExchangeRateDao exchangeRateDao;
 
-    public ExchangeRateService(ExchangeRateDao exchangeRateDao) {
+    public ExchangeRateService(JdbcExchangeRateDao exchangeRateDao) {
         this.exchangeRateDao = exchangeRateDao;
     }
 
@@ -29,37 +35,18 @@ public class ExchangeRateService {
                 exchangeRate.rate()
         );
 
-        exchangeRateDao.save(entity);
-
-        CurrencyCodePair codePair = new CurrencyCodePair(exchangeRate.baseCurrencyCode(), exchangeRate.targetCurrencyCode());
-        return getByCode(codePair);
+        ExchangeRateEntity savedEntity = exchangeRateDao.saveFromCodes(entity);
+        return ExchangeRateMapper.INSTANCE.toResponseDto(savedEntity);
     }
 
     public ExchangeRateResponseDto getByCode(CurrencyCodePair codePair) {
-        ExchangeRateEntity rateEntity = exchangeRateDao.findByCodes(codePair);
-
-        CurrencyEntity baseCurrencyEntity = rateEntity.baseCurrencyEntity();
-        CurrencyEntity targetCurrencyEntity = rateEntity.targetCurrencyEntity();
-
-        CurrencyResponseDto baseCurrencyResponseDto = new CurrencyResponseDto(
-                baseCurrencyEntity.id(),
-                baseCurrencyEntity.name(),
-                baseCurrencyEntity.code(),
-                baseCurrencyEntity.sign()
-        );
-        CurrencyResponseDto targetCurrencyResponseDto = new CurrencyResponseDto(
-                targetCurrencyEntity.id(),
-                targetCurrencyEntity.name(),
-                targetCurrencyEntity.code(),
-                targetCurrencyEntity.sign()
-        );
-
-        return new ExchangeRateResponseDto(
-                rateEntity.id(),
-                baseCurrencyResponseDto,
-                targetCurrencyResponseDto,
-                rateEntity.rate()
-        );
+        Optional<ExchangeRateEntity> rateEntityOpt = exchangeRateDao.findByCodes(codePair);
+        if (rateEntityOpt.isPresent()) {
+            return ExchangeRateMapper.INSTANCE.toResponseDto(rateEntityOpt.get());
+        }
+        throw new NoSuchElementException("Exchange rate with code pair %s, %s not found.".formatted(
+                codePair.baseCurrencyCode(), codePair.targetCurrencyCode()
+        ));
     }
 
     public List<ExchangeRateResponseDto> getAll() {
@@ -67,28 +54,7 @@ public class ExchangeRateService {
         List<ExchangeRateResponseDto> exchangeRateResponses = new ArrayList<>();
 
         for (ExchangeRateEntity rateEntity : exchangeRates) {
-            CurrencyEntity baseCurrencyEntity = rateEntity.baseCurrencyEntity();
-            CurrencyEntity targetCurrencyEntity = rateEntity.targetCurrencyEntity();
-
-            CurrencyResponseDto baseDto = new CurrencyResponseDto(
-                    baseCurrencyEntity.id(),
-                    baseCurrencyEntity.name(),
-                    baseCurrencyEntity.code(),
-                    baseCurrencyEntity.sign()
-            );
-            CurrencyResponseDto targetDto = new CurrencyResponseDto(
-                    targetCurrencyEntity.id(),
-                    targetCurrencyEntity.name(),
-                    targetCurrencyEntity.code(),
-                    targetCurrencyEntity.sign()
-            );
-            exchangeRateResponses.add(
-                    new ExchangeRateResponseDto(
-                            rateEntity.id(),
-                            baseDto,
-                            targetDto,
-                            rateEntity.rate()
-                    ));
+            exchangeRateResponses.add(ExchangeRateMapper.INSTANCE.toResponseDto(rateEntity));
             }
         return exchangeRateResponses;
     }
@@ -108,18 +74,78 @@ public class ExchangeRateService {
         String baseCurrencyCode = exchangeRequestDto.baseCurrencyCode();
         String targetCurrencyCode = exchangeRequestDto.targetCurrencyCode();
         CurrencyCodePair codePair = new CurrencyCodePair(baseCurrencyCode, targetCurrencyCode);
-        ExchangeRateResponseDto entity = getByCode(codePair);
+
+        ExchangeRateEntity exchangeEntity = findDirect(codePair)
+                .or(() -> findReverse(codePair))
+                .or(() -> findCross(codePair))
+                .orElseThrow(() -> new NoSuchElementException("Exchange rate with code pair %s, %s not found.".formatted(
+                        codePair.baseCurrencyCode(), codePair.targetCurrencyCode()
+                )));
+
         BigDecimal amount = exchangeRequestDto.amount();
-
-
-        BigDecimal convertedAmount = entity.rate().multiply(amount);
+        BigDecimal convertedAmount = exchangeEntity.rate().multiply(amount);
 
         return new ExchangeResponseDto(
-                entity.baseCurrency(),
-                entity.targetCurrency(),
-                entity.rate(),
+                CurrencyMapper.INSTANCE.toResponseDto(exchangeEntity.baseCurrencyEntity()),
+                CurrencyMapper.INSTANCE.toResponseDto(exchangeEntity.targetCurrencyEntity()),
+                exchangeEntity.rate().setScale(MONEY_DISPLAY_SCALE, BANK_ROUNDING),
                 amount,
-                convertedAmount
+                convertedAmount.setScale(MONEY_DISPLAY_SCALE, BANK_ROUNDING)
         );
+    }
+
+    private Optional<ExchangeRateEntity> findDirect(CurrencyCodePair codePair) {
+        Optional<ExchangeRateEntity> exchangeRateOpt = exchangeRateDao.findByCodes(codePair);
+        if (exchangeRateOpt.isPresent()) {
+            ExchangeRateEntity extractedEntity = exchangeRateOpt.get();
+            BigDecimal rate = extractedEntity.rate();
+            return Optional.of(new ExchangeRateEntity(
+                    extractedEntity.id(),
+                    extractedEntity.baseCurrencyEntity(),
+                    extractedEntity.targetCurrencyEntity(),
+                    rate
+            ));
+        }
+        return Optional.empty();
+    }
+
+    private Optional<ExchangeRateEntity> findReverse(CurrencyCodePair codePair) {
+        CurrencyCodePair reverseCodePair = new CurrencyCodePair(codePair.targetCurrencyCode(), codePair.baseCurrencyCode());
+        Optional<ExchangeRateEntity> exchangeRateOpt = exchangeRateDao.findByCodes(reverseCodePair);
+        if (exchangeRateOpt.isPresent()) {
+            ExchangeRateEntity extractedEntity = exchangeRateOpt.get();
+            BigDecimal rate = BigDecimal.ONE.divide(extractedEntity.rate(), RATE_SCALE, BANK_ROUNDING);
+            return Optional.of(new ExchangeRateEntity(
+                    extractedEntity.id(),
+                    extractedEntity.baseCurrencyEntity(),
+                    extractedEntity.targetCurrencyEntity(),
+                    rate)
+            );
+        }
+        return Optional.empty();
+    }
+
+    private Optional<ExchangeRateEntity> findCross(CurrencyCodePair codePair) {
+        CurrencyCodePair firstUsdCodePair = new CurrencyCodePair("USD", codePair.baseCurrencyCode());
+        CurrencyCodePair secondUsdCodePair = new CurrencyCodePair("USD", codePair.targetCurrencyCode());
+        Optional<ExchangeRateEntity> firstExtractedPairOpt = exchangeRateDao.findByCodes(firstUsdCodePair);
+        Optional<ExchangeRateEntity> secondExtractedPairOpt = exchangeRateDao.findByCodes(secondUsdCodePair);
+
+        if (firstExtractedPairOpt.isPresent() && secondExtractedPairOpt.isPresent()) {
+            ExchangeRateEntity firstExtractedPair = firstExtractedPairOpt.get();
+            ExchangeRateEntity secondExtractedPair = secondExtractedPairOpt.get();
+            BigDecimal firstRate = firstExtractedPair.rate();
+            BigDecimal secondRate = secondExtractedPair.rate();
+
+            BigDecimal rate = firstRate.divide(secondRate, RATE_SCALE, BANK_ROUNDING);
+
+            return Optional.of(new ExchangeRateEntity(
+                    null,
+                    firstExtractedPair.targetCurrencyEntity(),
+                    secondExtractedPair.targetCurrencyEntity(),
+                    rate)
+            );
+        }
+        return Optional.empty();
     }
 }

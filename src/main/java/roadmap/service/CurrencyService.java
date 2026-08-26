@@ -1,6 +1,7 @@
 package roadmap.service;
 
-import roadmap.dao.CurrencyDao;
+import roadmap.dao.JdbcCurrencyDao;
+import roadmap.mapper.CurrencyMapper;
 import roadmap.model.dto.request.CurrencyRequestDto;
 import roadmap.model.dto.response.CurrencyResponseDto;
 import roadmap.model.entity.CurrencyEntity;
@@ -9,42 +10,27 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class CurrencyService {
-    private final CurrencyDao currencyDao;
+    private final JdbcCurrencyDao currencyDao;
 
-    public CurrencyService(CurrencyDao currencyDao) {
+    public CurrencyService(JdbcCurrencyDao currencyDao) {
         this.currencyDao = currencyDao;
     }
 
     public CurrencyResponseDto save(CurrencyRequestDto dto) {
-        CurrencyEntity entity = new CurrencyEntity(
-                null,
-                dto.name(),
-                dto.code(),
-                dto.sign()
-        );
-        CurrencyEntity responseEntity = currencyDao.save(entity);
-        return new CurrencyResponseDto(
-                responseEntity.id(),
-                responseEntity.name(),
-                responseEntity.code(),
-                responseEntity.sign()
-        );
+        CurrencyEntity entity = CurrencyMapper.INSTANCE.toEntity(dto);
+        CurrencyEntity savedEntity = currencyDao.save(entity);
+        return CurrencyMapper.INSTANCE.toResponseDto(savedEntity);
     }
 
     public CurrencyResponseDto get(String code) {
-        CurrencyEntity entity = currencyDao.getByCode(code);
-        return new CurrencyResponseDto(
-                entity.id(),
-                entity.name(),
-                entity.code(),
-                entity.sign()
-        );
+        CurrencyEntity entity = currencyDao.findByCode(code);
+        return CurrencyMapper.INSTANCE.toResponseDto(entity);
     }
 
     public List<CurrencyResponseDto> getAll() {
         List<CurrencyEntity> currencies = currencyDao.findAll();
         return currencies.stream()
-                .map(e -> new CurrencyResponseDto(e.id(), e.name(), e.code(), e.sign()))
+                .map(CurrencyMapper.INSTANCE::toResponseDto)
                 .collect(Collectors.toList());
     }
 }
