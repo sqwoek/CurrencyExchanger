@@ -11,10 +11,8 @@ import roadmap.model.dto.request.ExchangeRateRequestDto;
 import roadmap.model.dto.response.ExchangeRateResponseDto;
 import roadmap.model.entity.CurrencyCodePair;
 import roadmap.service.ExchangeRateService;
-import roadmap.util.CurrencyValidatorUtil;
 import roadmap.util.ExchangeRateValidatorUtil;
 import roadmap.util.ServletResponseUtil;
-import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -67,7 +65,7 @@ public class ExchangeRateServlet extends HttpServlet {
         String rateString = req.getReader().readLine();
 
         if (rateString == null) {
-            throw new ValidationException(ExchangeRateValidatorUtil.MISSING_RATE_ERROR);
+            throw new ValidationException(ExchangeRateValidatorUtil.MISSING_RATE_MESSAGE);
         }
 
         rateString = rateString.replace("rate=", "");

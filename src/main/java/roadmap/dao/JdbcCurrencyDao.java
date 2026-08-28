@@ -2,8 +2,8 @@ package roadmap.dao;
 
 import roadmap.exception.DatabaseException;
 import roadmap.exception.EntityAlreadyExistsException;
-import roadmap.model.entity.CurrencyEntity;
 import roadmap.util.ConnectionManagerUtil;
+import roadmap.model.entity.CurrencyEntity;
 
 import java.sql.*;
 import java.util.ArrayList;

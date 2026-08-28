@@ -9,11 +9,10 @@ import roadmap.exception.DatabaseException;
 import roadmap.exception.ValidationException;
 import roadmap.model.dto.request.ExchangeRequestDto;
 import roadmap.model.dto.response.ExchangeResponseDto;
-import roadmap.service.ExchangeRateService;
+import roadmap.service.ExchangeService;
 import roadmap.util.CurrencyValidatorUtil;
 import roadmap.util.ExchangeRateValidatorUtil;
 import roadmap.util.ServletResponseUtil;
-import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -21,19 +20,19 @@ import java.util.NoSuchElementException;
 
 @WebServlet("/api/exchange/*")
 public class ExchangeServlet extends HttpServlet {
-    private ExchangeRateService exchangeRateService;
+    private ExchangeService exchangeService;
 
     @Override
     public void init() {
         ServletContext context = getServletContext();
-        this.exchangeRateService = (ExchangeRateService) context.getAttribute("exchangeRateService");
+        this.exchangeService = (ExchangeService) context.getAttribute("exchangeService");
     }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
             ExchangeRequestDto exchangeRequestDto = extractAndValidateExchangeRequest(req);
-            ExchangeResponseDto response = exchangeRateService.exchange(exchangeRequestDto);
+            ExchangeResponseDto response = exchangeService.exchange(exchangeRequestDto);
             ServletResponseUtil.sendSuccessResponse(resp, response);
         } catch (ValidationException ex) {
             ServletResponseUtil.sendErrorResponse(resp, 400, ex.getMessage());

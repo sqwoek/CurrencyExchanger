@@ -11,7 +11,6 @@ import roadmap.model.dto.response.CurrencyResponseDto;
 import roadmap.service.CurrencyService;
 import roadmap.util.CurrencyValidatorUtil;
 import roadmap.util.ServletResponseUtil;
-import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.util.NoSuchElementException;

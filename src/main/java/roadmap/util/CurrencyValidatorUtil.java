@@ -1,7 +1,6 @@
 package roadmap.util;
 
 import roadmap.exception.ValidationException;
-import roadmap.model.dto.request.CurrencyRequestDto;
 
 public final class CurrencyValidatorUtil {
     private static final int MIN_NAME_LENGTH = 2;
