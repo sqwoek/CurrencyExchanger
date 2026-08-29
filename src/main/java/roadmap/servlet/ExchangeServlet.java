@@ -9,6 +9,7 @@ import roadmap.exception.DatabaseException;
 import roadmap.exception.ValidationException;
 import roadmap.model.dto.request.ExchangeRequestDto;
 import roadmap.model.dto.response.ExchangeResponseDto;
+import roadmap.model.entity.CurrencyCodePair;
 import roadmap.service.ExchangeService;
 import roadmap.util.CurrencyValidatorUtil;
 import roadmap.util.ExchangeRateValidatorUtil;
@@ -18,7 +19,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.NoSuchElementException;
 
-@WebServlet("/api/exchange/*")
+@WebServlet("/exchange")
 public class ExchangeServlet extends HttpServlet {
     private ExchangeService exchangeService;
 
@@ -33,7 +34,7 @@ public class ExchangeServlet extends HttpServlet {
         try {
             ExchangeRequestDto exchangeRequestDto = extractAndValidateExchangeRequest(req);
             ExchangeResponseDto response = exchangeService.exchange(exchangeRequestDto);
-            ServletResponseUtil.sendSuccessResponse(resp, response);
+            ServletResponseUtil.sendSuccessResponse(resp, 200, response);
         } catch (ValidationException ex) {
             ServletResponseUtil.sendErrorResponse(resp, 400, ex.getMessage());
         } catch (NoSuchElementException ex) {
@@ -48,8 +49,7 @@ public class ExchangeServlet extends HttpServlet {
         String toCode = req.getParameter("to");
         String amount = req.getParameter("amount");
 
-        CurrencyValidatorUtil.validateCode(fromCode.toUpperCase());
-        CurrencyValidatorUtil.validateCode(toCode.toUpperCase());
+        ExchangeRateValidatorUtil.validateCodePair(new CurrencyCodePair(fromCode, toCode));
         ExchangeRateValidatorUtil.validateAmount(amount);
 
         BigDecimal bigDecimalAmount = new BigDecimal(amount);

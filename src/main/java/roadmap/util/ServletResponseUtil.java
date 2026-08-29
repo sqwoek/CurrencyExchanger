@@ -21,9 +21,9 @@ public final class ServletResponseUtil {
         }
     }
 
-    public static void sendSuccessResponse(HttpServletResponse resp, Object responseDto) throws IOException {
+    public static void sendSuccessResponse(HttpServletResponse resp, int successCode, Object responseDto) throws IOException {
         resp.setContentType("application/json");
-        resp.setStatus(200);
+        resp.setStatus(successCode);
 
         String jsonResponse = objectMapper.writeValueAsString(responseDto);
         resp.getWriter().write(jsonResponse);

@@ -18,7 +18,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.NoSuchElementException;
 
-@WebServlet("/api/exchangeRate/*")
+@WebServlet("/exchangeRate/*")
 public class ExchangeRateServlet extends HttpServlet {
     private ExchangeRateService exchangeRateService;
 
@@ -34,7 +34,7 @@ public class ExchangeRateServlet extends HttpServlet {
             CurrencyCodePair codePair = extractAndValidateCodePair(req);
             ExchangeRateResponseDto response = exchangeRateService.getByCode(codePair);
 
-            ServletResponseUtil.sendSuccessResponse(resp, response);
+            ServletResponseUtil.sendSuccessResponse(resp, 200, response);
         } catch (ValidationException ex) {
             ServletResponseUtil.sendErrorResponse(resp, 400, ex.getMessage());
         } catch (NoSuchElementException ex) {
@@ -50,7 +50,7 @@ public class ExchangeRateServlet extends HttpServlet {
             ExchangeRateRequestDto exchangeRate = extractAndValidateExchangeRateRequest(req);
             ExchangeRateResponseDto exchangeRateResponseDto = exchangeRateService.update(exchangeRate);
 
-            ServletResponseUtil.sendSuccessResponse(resp, exchangeRateResponseDto);
+            ServletResponseUtil.sendSuccessResponse(resp, 201, exchangeRateResponseDto);
         } catch (ValidationException ex) {
             ServletResponseUtil.sendErrorResponse(resp, 400, ex.getMessage());
         } catch (NoSuchElementException ex) {

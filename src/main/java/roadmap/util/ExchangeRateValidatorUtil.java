@@ -36,11 +36,13 @@ public final class ExchangeRateValidatorUtil {
         if (codePair == null) {
             throw new ValidationException(MISSING_CODE_PAIR_MESSAGE);
         }
+
+        CurrencyValidatorUtil.validateCode(codePair.baseCurrencyCode());
+        CurrencyValidatorUtil.validateCode(codePair.targetCurrencyCode());
+
         if (codePair.baseCurrencyCode().equals(codePair.targetCurrencyCode())) {
             throw new ValidationException(SAME_CURRENCY_MESSAGE);
         }
-        CurrencyValidatorUtil.validateCode(codePair.baseCurrencyCode());
-        CurrencyValidatorUtil.validateCode(codePair.targetCurrencyCode());
     }
 
     private static void validateStringToBigDecimal(

@@ -20,7 +20,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-@WebServlet("/api/exchangeRates/*")
+@WebServlet("/exchangeRates")
 public class ExchangeRatesServlet extends HttpServlet {
     private ExchangeRateService exchangeRateService;
 
@@ -36,7 +36,7 @@ public class ExchangeRatesServlet extends HttpServlet {
             ExchangeRateRequestDto exchangeRate = extractAndValidateExchangeRateRequest(req);
             ExchangeRateResponseDto exchangeRateResponseDto = exchangeRateService.save(exchangeRate);
 
-            ServletResponseUtil.sendSuccessResponse(resp, exchangeRateResponseDto);
+            ServletResponseUtil.sendSuccessResponse(resp, 201, exchangeRateResponseDto);
         } catch (ValidationException ex) {
             ServletResponseUtil.sendErrorResponse(resp, 400, ex.getMessage());
         } catch (NoSuchElementException ex) {
@@ -52,7 +52,7 @@ public class ExchangeRatesServlet extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
             List<ExchangeRateResponseDto> exchangeRates = exchangeRateService.getAll();
-            ServletResponseUtil.sendSuccessResponse(resp, exchangeRates);
+            ServletResponseUtil.sendSuccessResponse(resp, 200, exchangeRates);
         } catch (DatabaseException ex) {
             ServletResponseUtil.sendErrorResponse(resp, 500, "Internal error.");
         }
@@ -63,13 +63,12 @@ public class ExchangeRatesServlet extends HttpServlet {
         String targetCurrencyCode = req.getParameter("targetCurrencyCode");
         String rate = req.getParameter("rate");
 
-        CurrencyCodePair codePair =
-                new CurrencyCodePair(baseCurrencyCode.toUpperCase(), targetCurrencyCode.toUpperCase());
+        CurrencyCodePair codePair = new CurrencyCodePair(baseCurrencyCode, targetCurrencyCode);
         ExchangeRateValidatorUtil.validateCodePair(codePair);
         ExchangeRateValidatorUtil.validateRate(rate);
 
         BigDecimal bigDecimalRate = new BigDecimal(rate);
-        return new ExchangeRateRequestDto(codePair.baseCurrencyCode(),
-                codePair.targetCurrencyCode(), bigDecimalRate);
+        return new ExchangeRateRequestDto(codePair.baseCurrencyCode().toUpperCase(),
+                codePair.targetCurrencyCode().toUpperCase(), bigDecimalRate);
     }
 }

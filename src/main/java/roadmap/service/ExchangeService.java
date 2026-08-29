@@ -40,7 +40,7 @@ public class ExchangeService {
         return new ExchangeResponseDto(
                 CurrencyMapper.INSTANCE.toResponseDto(exchangeEntity.baseCurrencyEntity()),
                 CurrencyMapper.INSTANCE.toResponseDto(exchangeEntity.targetCurrencyEntity()),
-                exchangeEntity.rate().setScale(MONEY_DISPLAY_SCALE, BANK_ROUNDING),
+                exchangeEntity.rate(),
                 amount,
                 convertedAmount.setScale(MONEY_DISPLAY_SCALE, BANK_ROUNDING)
         );

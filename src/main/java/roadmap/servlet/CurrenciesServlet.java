@@ -17,7 +17,7 @@ import roadmap.util.ServletResponseUtil;
 import java.io.IOException;
 import java.util.List;
 
-@WebServlet("/api/currencies/*")
+@WebServlet("/currencies")
 public class CurrenciesServlet extends HttpServlet {
     private CurrencyService currencyService;
 
@@ -33,7 +33,7 @@ public class CurrenciesServlet extends HttpServlet {
             CurrencyRequestDto requestCurrency = extractAndValidateDto(req);
             CurrencyResponseDto responseCurrency = currencyService.save(requestCurrency);
 
-            ServletResponseUtil.sendSuccessResponse(resp, responseCurrency);
+            ServletResponseUtil.sendSuccessResponse(resp, 201, responseCurrency);
         } catch (ValidationException ex) {
             ServletResponseUtil.sendErrorResponse(resp, 400, ex.getMessage());
         } catch (EntityAlreadyExistsException ex) {
@@ -47,14 +47,14 @@ public class CurrenciesServlet extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
             List<CurrencyResponseDto> currencies = currencyService.getAll();
-            ServletResponseUtil.sendSuccessResponse(resp, currencies);
+            ServletResponseUtil.sendSuccessResponse(resp, 200, currencies);
         } catch (DatabaseException ex) {
             ServletResponseUtil.sendErrorResponse(resp, 500, "Internal error.");
         }
     }
 
     private static CurrencyRequestDto extractAndValidateDto(HttpServletRequest req) {
-        String code = req.getParameter("code").toUpperCase();
+        String code = req.getParameter("code");
         String name = req.getParameter("name");
         String sign = req.getParameter("sign");
 
@@ -62,6 +62,6 @@ public class CurrenciesServlet extends HttpServlet {
         CurrencyValidatorUtil.validateName(name);
         CurrencyValidatorUtil.validateSign(sign);
 
-        return new CurrencyRequestDto(name, code, sign);
+        return new CurrencyRequestDto(name, code.toUpperCase(), sign);
     }
 }
