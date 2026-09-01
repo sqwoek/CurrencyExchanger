@@ -50,7 +50,7 @@ public class ExchangeRateServlet extends HttpServlet {
             ExchangeRateRequestDto exchangeRate = extractAndValidateExchangeRateRequest(req);
             ExchangeRateResponseDto exchangeRateResponseDto = exchangeRateService.update(exchangeRate);
 
-            ServletResponseUtil.sendSuccessResponse(resp, 201, exchangeRateResponseDto);
+            ServletResponseUtil.sendSuccessResponse(resp, 200, exchangeRateResponseDto);
         } catch (ValidationException ex) {
             ServletResponseUtil.sendErrorResponse(resp, 400, ex.getMessage());
         } catch (NoSuchElementException ex) {
@@ -77,12 +77,17 @@ public class ExchangeRateServlet extends HttpServlet {
 
     private static CurrencyCodePair extractAndValidateCodePair(HttpServletRequest req) {
         String path = req.getPathInfo();
-        String code = path.substring(1);
-        String baseCurrencyCode = code.substring(0, 3);
-        String targetCurrencyCode = code.substring(3);
+        if (path == null || path.equals("/")) {
+            throw new ValidationException(ExchangeRateValidatorUtil.MISSING_CODE_PAIR_MESSAGE);
+        }
+        String inputCodePair = path.substring(1);
+        if (inputCodePair.length() != 6) {
+            throw new ValidationException(ExchangeRateValidatorUtil.MISSING_CODE_PAIR_MESSAGE);
+        }
+        String baseCurrencyCode = inputCodePair.substring(0, 3);
+        String targetCurrencyCode = inputCodePair.substring(3);
 
-        CurrencyCodePair codePair =
-                new CurrencyCodePair(baseCurrencyCode.toUpperCase(), targetCurrencyCode.toUpperCase());
+        CurrencyCodePair codePair = new CurrencyCodePair(baseCurrencyCode, targetCurrencyCode);
         ExchangeRateValidatorUtil.validateCodePair(codePair);
         return codePair;
     }

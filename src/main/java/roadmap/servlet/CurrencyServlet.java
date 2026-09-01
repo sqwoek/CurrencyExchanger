@@ -46,6 +46,6 @@ public class CurrencyServlet extends HttpServlet {
         String path = req.getPathInfo();
         String code = path.substring(1);
         CurrencyValidatorUtil.validateCode(code);
-        return code.toUpperCase();
+        return code;
     }
 }

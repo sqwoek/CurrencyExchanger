@@ -10,7 +10,7 @@ public final class CurrencyValidatorUtil {
     private static final String MISSING_NAME_MESSAGE = "Currency name is required.";
     private static final String MISSING_CODE_MESSAGE = "Currency code is required.";
     private static final String MISSING_SIGN_MESSAGE = "Currency sign is required.";
-    private static final String INVALID_CODE_FORMAT_MESSAGE = "Currency code must be exactly 3 english letters.";
+    private static final String INVALID_CODE_FORMAT_MESSAGE = "Currency code must be exactly 3 upper-case english letters.";
     private static final String INVALID_SIGN_LENGTH_MESSAGE = "Currency sign must be less or equal 3 characters.";
     private static final String INVALID_NAME_LENGTH_MESSAGE =
             "Currency name must be between %d and %d letters.".formatted(

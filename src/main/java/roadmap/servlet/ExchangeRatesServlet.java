@@ -68,7 +68,6 @@ public class ExchangeRatesServlet extends HttpServlet {
         ExchangeRateValidatorUtil.validateRate(rate);
 
         BigDecimal bigDecimalRate = new BigDecimal(rate);
-        return new ExchangeRateRequestDto(codePair.baseCurrencyCode().toUpperCase(),
-                codePair.targetCurrencyCode().toUpperCase(), bigDecimalRate);
+        return new ExchangeRateRequestDto(codePair.baseCurrencyCode(), codePair.targetCurrencyCode(), bigDecimalRate);
     }
 }

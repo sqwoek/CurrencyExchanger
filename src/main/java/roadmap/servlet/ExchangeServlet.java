@@ -53,6 +53,6 @@ public class ExchangeServlet extends HttpServlet {
         ExchangeRateValidatorUtil.validateAmount(amount);
 
         BigDecimal bigDecimalAmount = new BigDecimal(amount);
-        return new ExchangeRequestDto(fromCode.toUpperCase(), toCode.toUpperCase(), bigDecimalAmount);
+        return new ExchangeRequestDto(fromCode, toCode, bigDecimalAmount);
     }
 }

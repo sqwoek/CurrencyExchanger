@@ -62,6 +62,6 @@ public class CurrenciesServlet extends HttpServlet {
         CurrencyValidatorUtil.validateName(name);
         CurrencyValidatorUtil.validateSign(sign);
 
-        return new CurrencyRequestDto(name, code.toUpperCase(), sign);
+        return new CurrencyRequestDto(name, code, sign);
     }
 }

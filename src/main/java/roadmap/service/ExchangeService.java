@@ -40,7 +40,7 @@ public class ExchangeService {
         return new ExchangeResponseDto(
                 CurrencyMapper.INSTANCE.toResponseDto(exchangeEntity.baseCurrencyEntity()),
                 CurrencyMapper.INSTANCE.toResponseDto(exchangeEntity.targetCurrencyEntity()),
-                exchangeEntity.rate(),
+                exchangeEntity.rate().stripTrailingZeros(),
                 amount,
                 convertedAmount.setScale(MONEY_DISPLAY_SCALE, BANK_ROUNDING)
         );
@@ -89,7 +89,7 @@ public class ExchangeService {
             BigDecimal firstRate = firstExtractedPair.rate();
             BigDecimal secondRate = secondExtractedPair.rate();
 
-            BigDecimal rate = firstRate.divide(secondRate, RATE_SCALE, BANK_ROUNDING);
+            BigDecimal rate = secondRate.divide(firstRate, RATE_SCALE, BANK_ROUNDING);
 
             return Optional.of(new ExchangeRateEntity(
                     null,
